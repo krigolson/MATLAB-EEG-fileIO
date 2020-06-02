@@ -1,13 +1,22 @@
-function [EEG] = doLoadCGXDevKit(fileName)
+function [EEG] = doLoadCGXDevKit(pathName,fileName,nbEEGChan,chanNames)
 
-    streams = load_xdf(fileName);
+    % function to load Dev Kit data saved through the native app or through
+    % LSL
 
-    allData = streams{1,1}.time_series;
+    % try brain vision format first
+    if strcmp(fileName(end-4:end),'.vhdr')
+        EEG = doLoadBVData(pathName,fileName);
+        allData = EEG.data;
+    else
+        streams = load_xdf(fileName);
+        allData = streams{1,1}.time_series;
+    end
 
-    eegData = allData(1:8,:);
+    % isolate EEG data
+    eegData = allData(1:nbEEGChan,:);
 
+    % correct markers
     markerData = allData(13,:);
-
     position = 1;
     checkValue = 0;
     while 1
@@ -30,17 +39,7 @@ function [EEG] = doLoadCGXDevKit(fileName)
     % default sampling rate for MUSE
     EEG.srate = 500;
 
-    EEG.data(1,:) = eegData(1,:);
-    EEG.data(2,:) = eegData(2,:);
-    EEG.data(3,:) = eegData(3,:);
-    EEG.data(4,:) = eegData(4,:);
-    EEG.data(5,:) = eegData(5,:);
-    EEG.data(6,:) = eegData(6,:);    
-    EEG.data(7,:) = eegData(7,:);
-    EEG.data(8,:) = eegData(8,:);
-    
-    % because we are only using two channels
-    EEG.data(3:8,:) = [];
+    EEG.data = eegData;
 
     EEG.pnts = length(EEG.data);
 
@@ -48,7 +47,7 @@ function [EEG] = doLoadCGXDevKit(fileName)
     EEG.event = [];
     eventCounter = 1;
     for counter = 1:length(markerData)
-        if markerData(counter) ~= 0
+        if markerData(counter) ~= 0 & counter > EEG.srate * 2 % add this in to remove markers in the first bit of data
             EEG.event(eventCounter).latency = counter;
             EEG.event(eventCounter).duration = 1;
             EEG.event(eventCounter).channel = 0;
@@ -82,6 +81,9 @@ function [EEG] = doLoadCGXDevKit(fileName)
     EEG.xmin = EEG.times(1);
     EEG.xmax = EEG.times(end)/1000;
 
-    EEG.nbchan = 2;
+    EEG.nbchan = nbEEGChan;
+    
+    EEG.chanlocs = struct('labels',chanNames);
+    EEG = pop_chanedit(EEG,'lookup','Standard-10-20-Cap81.ced');
     
 end

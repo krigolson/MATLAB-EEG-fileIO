@@ -15,10 +15,8 @@ function EEG = doLoadBVData(varargin)
         
     else
         
-        filename = varargin{1};
-        pathname = which(filename);
-        pathname = erase(pathname,filename);
-        cd(pathname);
+        pathname = varargin{1};
+        filename = varargin{2};
         
     end
 
