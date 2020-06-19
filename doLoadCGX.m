@@ -21,7 +21,7 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
                     markers(position) = 0;
                 end
                 position = position + 1;
-                if position > length(markerData)
+                if position > length(markers)
                     break
                 end
             end
@@ -104,6 +104,7 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
     end
     
     % setup the EEGLAB format
+    EEG = [];
     EEG = eeg_emptyset;
 
     % create an EEGLAB event variable
