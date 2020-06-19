@@ -29,14 +29,21 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
         end
         if strcmp(fileName(end-3:end),'.xdf')
             streams = load_xdf(fileName);
-            allData = streams{1,1}.time_series;
+            if streams{1,1}.info.name(1) == 'M'
+                mStream = 1;
+                dStream = 2;
+            else
+                mStream = 2;
+                dStream = 1;
+            end
+            allData = streams{1,dStream}.time_series;
+            timeStamps = streams{1,dStream}.time_stamps;
             eegData = allData(1:nbEEGChan,:);
-            timeStamps = streams{1,1}.time_stamps;
-            streamMarkers = streams{1,2}.time_series;
-            markerTimes = streams{1,2}.time_stamps;
+            streamMarkers = streams{1,mStream}.time_series;
+            markerTimes = streams{1,mStream}.time_stamps;
             markers(1:length(timeStamps)) = 0;
 
-            for markerCounter = 1:length(streamMarkers)
+            for markerCounter = 1:length(timeStamps)
 
                 currentMarkerTime = markerTimes(markerCounter);
 
@@ -57,6 +64,7 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
         if strcmp(fileName(end-3:end),'.csv')
             allData = csvread(fileName);
             eegData = allData(:,[1 nbEEGChan])';
+            eegData = eegData * 1000000;
             markers = allData(:,nbEEGChan+1);
             lastPosition = length(markers);
             currentPosition = 2;
