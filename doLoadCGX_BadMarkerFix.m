@@ -66,12 +66,12 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
             % figure out the marker channel
             if allData(1,1) == 0
                 mChannel = 1;
-                eegData = allData(:,mChannel+1:size(allData,2))';
+                eegData = allData(:,[mChannel+1 end])';
                 eegData = eegData * 1000000;
                 markers = allData(:,mChannel);
             else
                 mChannel = size(allData,2);
-                eegData = allData(:,1:mChannel-1)';
+                eegData = allData(:,[mChannel end-1])';
                 eegData = eegData * 1000000;
                 markers = allData(:,mChannel);
             end
