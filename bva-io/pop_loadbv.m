@@ -78,7 +78,7 @@ try
 catch
 end
 EEG.comments = ['Original file: ' hdr.commoninfos.datafile];
-hdr.commoninfos.numberofchannels = str2double(hdr.commoninfos.numberofchannels);
+hdr.commoninfos.numberofchannels = str2double(hdr.commoninfos.numberofchannels);       
 EEG.srate = 1000000 / str2double(hdr.commoninfos.samplinginterval);
 
 % Binary Infos
