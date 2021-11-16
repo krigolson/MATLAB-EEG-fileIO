@@ -1,10 +1,13 @@
-function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
+function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,dataType)
 
     % function to load CGX data saved through the native app in Brain Vision format, through
     % LSL in XDF format (requires the xdfimport library), or throuhg PEER
     % in csv format
 
     % try brain vision format first
+    
+    % dataType = 1 is pure CSV, dataType = 2 is extended csv with all the other detail
+    
     try
         if strcmp(fileName(end-4:end),'.vhdr')
             EEG = doLoadBVData(pathName,fileName);
@@ -62,46 +65,59 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
             
         end
         if strcmp(fileName(end-3:end),'.csv')
-            allData = csvread(fileName);
-            % figure out the marker channel
-            if allData(1,1) == 0
-                mChannel = 1;
-                eegData = allData(:,mChannel+1:size(allData,2))';
-                eegData = eegData * 1000000;
-                markers = allData(:,mChannel);
+            
+            if dataType == 1
+                allData = csvread(fileName);
+                % figure out the marker channel
+                if max(allData(:,1)) == 0
+                    mChannel = 1;
+                    eegData = allData(:,validChannels);
+                    eegData = eegData';
+                    eegData = eegData * 1000000;
+                    markers = allData(:,mChannel);
+                else
+                    mChannel = size(allData,2);
+                    eegData = allData(:,1:mChannel-1)';
+                    eegData = eegData * 1000000;
+                    markers = allData(:,mChannel);
+                end
             else
-                mChannel = size(allData,2);
-                eegData = allData(:,1:mChannel-1)';
-                eegData = eegData * 1000000;
-                markers = allData(:,mChannel);
+                allData = complexCGX(fileName);
+                markers = allData(:,1);
+                allData(:,[1 2]) = [];
+                eegData = allData';
             end
 
-            lastPosition = length(markers);
-            currentPosition = 2;
-            while 1
-                if markers(currentPosition) ~= markers(currentPosition-1)
-                    zeroPosition = currentPosition + 1;
-                    if zeroPosition > length(markers)
-                        break
-                    end
-                    currentTarget = markers(currentPosition);
-                    while 1
-                        if markers(zeroPosition) == currentTarget
-                            markers(zeroPosition) = 0;
-                        else
-                            currentPosition = zeroPosition - 1;
-                            break
-                        end
-                        zeroPosition = zeroPosition + 1;
+            if max(allData(:,1)) > 0
+            
+                lastPosition = length(markers);
+                currentPosition = 2;
+                while 1
+                    if markers(currentPosition) ~= markers(currentPosition-1)
+                        zeroPosition = currentPosition + 1;
                         if zeroPosition > length(markers)
                             break
                         end
+                        currentTarget = markers(currentPosition);
+                        while 1
+                            if markers(zeroPosition) == currentTarget
+                                markers(zeroPosition) = 0;
+                            else
+                                currentPosition = zeroPosition - 1;
+                                break
+                            end
+                            zeroPosition = zeroPosition + 1;
+                            if zeroPosition > length(markers)
+                                break
+                            end
+                        end
+                    end
+                    currentPosition = currentPosition + 1;
+                    if currentPosition > length(markers)
+                        break
                     end
                 end
-                currentPosition = currentPosition + 1;
-                if currentPosition > length(markers)
-                    break
-                end
+                
             end
             
         end
@@ -111,14 +127,18 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
     
     % convert markers to EEGLAB format
     
-    % create markers data
-    markerCounter = 1;
-    for counter = 1:length(markers)
-        if markers(counter) ~= 0
-            markerData(markerCounter,1) = markers(counter);
-            markerData(markerCounter,2) = counter;
-            markerCounter = markerCounter + 1;
+    if max(allData(:,1)) > 0
+    
+        % create markers data
+        markerCounter = 1;
+        for counter = 1:length(markers)
+            if markers(counter) ~= 0
+                markerData(markerCounter,1) = markers(counter);
+                markerData(markerCounter,2) = counter;
+                markerCounter = markerCounter + 1;
+            end
         end
+        
     end
     
     % setup the EEGLAB format
@@ -127,28 +147,34 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
 
     % create an EEGLAB event variable
     EEG.event = [];
-    for counter = 1:length(markerData)
-        EEG.event(counter).latency = markerData(counter,2);
-        EEG.event(counter).duration = 1;
-        EEG.event(counter).channel = 0;
-        EEG.event(counter).bvtime = [];
-        EEG.event(counter).bvmknum = counter;
+    
+    if max(allData(:,1)) > 0
+    
+        for counter = 1:size(markerData,1)
+            EEG.event(counter).latency = markerData(counter,2);
+            EEG.event(counter).duration = 1;
+            EEG.event(counter).channel = 0;
+            EEG.event(counter).bvtime = [];
+            EEG.event(counter).bvmknum = counter;
+
+            if markerData(counter,1) < 10
+                stringMarker = ['S  ' num2str(markerData(counter,1))];
+            end
+            if markerData(counter,1) > 9 && markerData(counter,1) < 100
+                stringMarker = ['S ' num2str(markerData(counter,1))];
+            end
+            if markerData(counter,1) > 99
+                stringMarker = ['S' num2str(markerData(counter,1))];
+            end   
+            EEG.event(counter).type = stringMarker;
+            EEG.event(counter).code = 'Stimulus';
+            EEG.event(counter).urevent = counter;
+        end
         
-        if markerData(counter,1) < 10
-            stringMarker = ['S  ' num2str(markerData(counter,1))];
-        end
-        if markerData(counter,1) > 10 && markerData(counter,1) < 100
-            stringMarker = ['S ' num2str(markerData(counter,1))];
-        end
-        if markerData(counter,1) > 99
-            stringMarker = ['S' num2str(markerData(counter,1))];
-        end   
-        EEG.event(counter).type = stringMarker;
-        EEG.event(counter).code = 'Stimulus';
-        EEG.event(counter).urevent = counter;
+        EEG.allMarkers = markerData;
+        
     end
     EEG.urevent = EEG.event;
-    EEG.allMarkers = markerData;
     
     % default sampling rate for CGX systems
     EEG.srate = 500;
@@ -166,7 +192,7 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames)
     EEG.xmin = EEG.times(1);
     EEG.xmax = EEG.times(end)/1000;
 
-    EEG.nbchan = nbEEGChan;
+    EEG.nbchan = size(EEG.data,1);
     
     EEG.chanlocs = struct('labels',chanNames);
     EEG = pop_chanedit(EEG,'lookup','Standard-10-20-Cap81.ced');
