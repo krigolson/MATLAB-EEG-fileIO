@@ -1,4 +1,4 @@
-function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,dataType)
+function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,dataType,isPatch)
 
     % function to load CGX data saved through the native app in Brain Vision format, through
     % LSL in XDF format (requires the xdfimport library), or throuhg PEER
@@ -7,6 +7,13 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,d
     % try brain vision format first
     
     % dataType = 1 is pure CSV, dataType = 2 is extended csv with all the other detail
+    % isPatch = 1 if yes = 0 if no.
+    
+    if isPatch == 1
+        vMultipler = 1;
+    else
+        vMultipler = 1000000;
+    end
     
     try
         if strcmp(fileName(end-4:end),'.vhdr')
@@ -73,12 +80,17 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,d
                     mChannel = 1;
                     eegData = allData(:,validChannels);
                     eegData = eegData';
-                    eegData = eegData * 1000000;
+                    eegData = eegData * vMultipler;
                     markers = allData(:,mChannel);
                 else
-                    mChannel = size(allData,2);
-                    eegData = allData(:,1:mChannel-1)';
-                    eegData = eegData * 1000000;
+                    %mChannel = size(allData,2);
+                    %eegData = allData(:,1:mChannel-1)';
+                    %eegData = eegData * 1000000;
+                    %markers = allData(:,mChannel);
+                    mChannel = 1;
+                    eegData = allData(:,validChannels);
+                    eegData = eegData';
+                    eegData = eegData * vMultipler;
                     markers = allData(:,mChannel);
                 end
             else
@@ -177,7 +189,11 @@ function [EEG] = doLoadCGX(pathName,fileName,nbEEGChan,chanNames,validChannels,d
     EEG.urevent = EEG.event;
     
     % default sampling rate for CGX systems
-    EEG.srate = 500;
+    if isPatch == 0
+        EEG.srate = 500;
+    else
+        EEG.srate = 250;
+    end
 
     EEG.data = eegData;
 
