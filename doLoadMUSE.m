@@ -1,4 +1,4 @@
-function [EEG] = doLoadMUSE(fileName)
+function [EEG] = doLoadMUSE(fileName,whichMuse)
 
     % by Olav Krigolson, April 2019
     % load PEER CSV data into MATLAB in EEGLAB format
@@ -47,7 +47,11 @@ function [EEG] = doLoadMUSE(fileName)
     EEG = eeg_emptyset;
     
     % default sampling rate for MUSE
-    EEG.srate = 256;
+    if whichMuse == 1
+        EEG.srate = 220;
+    else
+        EEG.srate = 256;
+    end
     
     % extract the EEG data from the PEER format
     eegData = [];
