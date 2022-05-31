@@ -1,4 +1,4 @@
-function EEG = convertEDFtoEEG(data,srate)
+function EEG = convertEDFtoEEG(data)
 
     x = data{1,2};
     y = cell2mat(x);
@@ -39,11 +39,13 @@ function EEG = convertEDFtoEEG(data,srate)
     EEG = eeg_emptyset;
     EEG.chanlocs = x;
 
-    EEG.srate = srate;
+    EEG.srate = samplingRate;
  
     EEG.data = rawEEG;
 
     EEG.pnts = length(EEG.data);
+
+    EEG.trials = 1;
 
     % correct time stamps for EEGLAB format
     EEG.times = [];
@@ -55,5 +57,9 @@ function EEG = convertEDFtoEEG(data,srate)
     EEG.xmax = EEG.times(end)/1000;
 
     EEG.nbchan = channelCount;
+
+    EEG.systemType = channels;
+
+    EEG.edfChanNames = channelNames;
 
 end
