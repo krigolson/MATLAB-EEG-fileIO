@@ -25,4 +25,21 @@ function EEG = doLoadBVData(varargin)
     EEG.pathname = pathname;
     EEG.filename = filename;
     
+    % check for events with zero latency
+    
+    for i = size(EEG.event,2):-1:1
+        
+        if EEG.event(i).latency == 1
+            EEG.event(i) = [];
+        end
+        
+    end
+    for i = 1:size(EEG.event,2)
+        EEG.event(i).bvmknum = i;
+        EEG.event(i).urevent = i;
+        EEG.event(i).epoch = i;
+    end
+    EEG.urevent = EEG.event;
+    
+    
 end
