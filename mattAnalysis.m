@@ -3,8 +3,8 @@
 EEG1 = doLoadMindMonitor('matt_open2.csv',2);
 EEG2 = doLoadMindMonitor('matt_closed2.csv',2);
 
-EEG1 = doFilterBandPass(EEG1,0.1,30);
-EEG2 = doFilterBandPass(EEG2,0.1,30);
+EEG1 = doFilterBandPass(EEG1,0.5,30);
+EEG2 = doFilterBandPass(EEG2,0.5,30);
 
 EEG1 = doTemporalEpochs(EEG1,1000,900);
 EEG2 = doTemporalEpochs(EEG2,1000,900);
